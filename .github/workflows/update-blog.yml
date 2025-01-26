@@ -1,0 +1,38 @@
+name: Update Blog from Notion
+
+on:
+  workflow_dispatch:  # 手动触发
+
+jobs:
+  update-blog:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'  # 指定 Node.js 版本
+
+      - name: Install Dependencies in scripts Directory
+        working-directory: ./scripts
+        run: npm install
+
+      - name: Run Script to Fetch Notion Data
+        working-directory: ./scripts
+        env:
+          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+          NOTION_DATABASE_ID: ${{ vars.NOTION_DATABASE_ID }}
+        run: node notion-to-markdown.js
+
+      - name: Commit and Push Changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add content/posts
+          git commit -m "Update blog posts from Notion API on $(date +'%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
+          git push origin main
